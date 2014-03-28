@@ -11,7 +11,13 @@ The script requires the path to the file with the json objects that will
  be used. To do so use -f or --file to specify the file:
  -f ../../file_with_json_obj.json
 
-With only these two options set the script will print both dictionaries 
+Specify which attribute(s) will be used to create the dictionary. There 
+are two sets of flags:
+ -a --attr
+ -b --attr2
+If --attr2 is not given, the default is to use 'review_count'
+
+With only these options set the script will print both dictionaries 
 to STDOUT. Can be used to make sure everything is working correctly 
 before saving the objects
 
@@ -19,23 +25,26 @@ If you want the two dictionaries that are created to be saved with
 cPickle then use the flag:
  -p or --pickle
 
-To specify where the pickles objects are saved instead of the defualt 
-there is a flag for each file name for each dictionary. The naming 
-convention is clear:
+To specify where the pickles objects are saved, instead of using the defualt, 
+there is a flag for each file name for each dictionary. With id corresponding
+to the values obtained by --attr and index corresponds to values from --attr2
+after descending sort. Naming convention should be clear:
  --id_to_index
  --indx_to_id
 
 examples:
- Create dictionaries and pickle them from data_file and save each one in these seperate files
- python edit_data.py -d -p -f ../data_file.json --id_to_indx userid_to_indx.p --indx_to_id indx_to_userid.p
+ Create dictionaries for user_id from data_file and pickle each in these seperate files
+ python edit_data.py -d -attr user_id -f ../data_file.json -p --id_to_indx userid_to_indx.p --indx_to_id indx_to_userid.p
+ Same as above
+ python edit_data.py -d -attr user_id -attr2 review_count  -f ../data_file.json -p --id_to_indx userid_to_indx.p --indx_to_id indx_to_userid.p
 
- Create dictionaries from a small file and print them to STDOUT
- python edit_data.py -d -f ../limited_data_file.json 
-
+ Create dictionaries for business_id from a file and print them to STDOUT
+ python edit_data.py -d -attr business_id -f ../limited_data_file.json 
 
 
 """
 
+import sys
 from optparse import OptionParser
 import json
 from json.decoder import WHITESPACE
@@ -52,6 +61,12 @@ parser.add_option("-f", "--file", action="store", \
 parser.add_option("-o", "--output_file", action="store", \
                       dest="out_file", type="string", default=None, \
                       help="file to put output in", metavar="FILE")
+parser.add_option("-a", "--attr", action="store", 
+                  dest="attr", type="string", default=None,
+                  help="Attribute name used for filtering")
+parser.add_option("-b", "--attr2", action="store", 
+                  dest="attr2", type="string", default=None,
+                  help="Secondary attribute name")
 parser.add_option("-p", "--pickle", action="store_true", 
                   dest="create_pickle", default=False,
                   help="pickle the output object")
@@ -86,7 +101,7 @@ def iterload(string_or_fp, cls=json.JSONDecoder, **kwargs):
 #
 # ONLY for businesses file right now!!
 #
-def create_lookup_dict(infile, id_to_indx=None, indx_to_id=None, pick=False):
+def create_lookup_dict(infile, attr, attr2, id_to_indx=None, indx_to_id=None, pick=False):
     
     # if output files were not specified and pickling, set them
     if pick:
@@ -94,15 +109,31 @@ def create_lookup_dict(infile, id_to_indx=None, indx_to_id=None, pick=False):
             id_to_indx = "id_to_indx.p" 
         if indx_to_id == None:
             indx_to_id = "indx_to_id.p" 
+    # set attr2 defualt if None given
+    if attr2 == None:
+        attr2 = "review_count"
 
     # lookup dictionary to hold id's and index number
     lookup = {}
     with open(infile, "r") as fp:
+        # iterate through objects in file
         for obj in iterload(fp):
-            if obj['business_id'] not in lookup:
-                lookup[ obj['business_id'] ] = obj['review_count']
+            # make sure a valid attribute name was given
+            try:
+                attr_value = obj[attr]
+            except KeyError:
+                print "ERROR: %s, is not a valid attribute name " %attr
+                exit()
+            try:
+                attr2_value = obj[attr2]
+            except KeyError:
+                print "ERROR: %s, is not a valid attribute name " %attr2
+                exit()
+            # upadate dictionary
+            if attr_value not in lookup:
+                lookup[ attr_value ] = attr2_value
             else:
-                print obj['business_id'] + " already in lookup dictionary" 
+                print attr_value + " already in lookup dictionary. Skipping duplicate" 
         
     # sort by descending review count in to a list
     sorted_list = sorted(lookup.iteritems(), key=operator.itemgetter(1), reverse=True)
@@ -130,15 +161,17 @@ def create_lookup_dict(infile, id_to_indx=None, indx_to_id=None, pick=False):
 
 def main():
     options, args = parser.parse_args()
-    print options
-    print args
     
-    if options.create_dict and options.file_path != None:
-        print "creating a lookup dictionary from " + options.file_path 
-        create_lookup_dict(options.file_path, \
+    if options.create_dict:
+        if options.file_path != None and options.attr != None:
+            print "creating a lookup dictionary from " + options.file_path 
+            create_lookup_dict(options.file_path, \
+                               options.attr, options.attr2, \
                                id_to_indx=options.id_to_indx, \
                                indx_to_id=options.indx_to_id, \
                                pick=options.create_pickle)
+        else:
+            print "ERROR: Must specify an input file and atleast one attribute to create a lookup dictionary"
 
     exit()
 
