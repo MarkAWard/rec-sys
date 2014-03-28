@@ -1,3 +1,41 @@
+"""
+So far the only thing up and running is creating dictionaries used for 
+lookups later. Next to add, a way to explore the data easily.
+
+-----Creating Lookup Dictionaries-----
+
+To create a pair of dictionaries use the flag:
+ -d or --dictionary.
+
+The script requires the path to the file with the json objects that will
+ be used. To do so use -f or --file to specify the file:
+ -f ../../file_with_json_obj.json
+
+With only these two options set the script will print both dictionaries 
+to STDOUT. Can be used to make sure everything is working correctly 
+before saving the objects
+
+If you want the two dictionaries that are created to be saved with 
+cPickle then use the flag:
+ -p or --pickle
+
+To specify where the pickles objects are saved instead of the defualt 
+there is a flag for each file name for each dictionary. The naming 
+convention is clear:
+ --id_to_index
+ --indx_to_id
+
+examples:
+ Create dictionaries and pickle them from data_file and save each one in these seperate files
+ python edit_data.py -d -p -f ../data_file.json --id_to_indx userid_to_indx.p --indx_to_id indx_to_userid.p
+
+ Create dictionaries from a small file and print them to STDOUT
+ python edit_data.py -d -f ../limited_data_file.json 
+
+
+
+"""
+
 from optparse import OptionParser
 import json
 from json.decoder import WHITESPACE
@@ -5,8 +43,8 @@ import operator
 import cPickle as pickle
 
 # command line parser
-usage = "<script> flag [args ...]"
-description = "I don't know how to use this yet either"
+usage = "<script> [args ...]"
+description = "Script for manipulating and exploring data files."
 parser = OptionParser(usage=usage, description=description)
 parser.add_option("-f", "--file", action="store", \
                       dest="file_path", type="string", default=None, \
@@ -45,8 +83,9 @@ def iterload(string_or_fp, cls=json.JSONDecoder, **kwargs):
         # skip whitespace till next object
         idx = WHITESPACE.match(string, end).end()
 
-
-
+#
+# ONLY for businesses file right now!!
+#
 def create_lookup_dict(infile, id_to_indx=None, indx_to_id=None, pick=False):
     
     # if output files were not specified and pickling, set them
@@ -85,8 +124,9 @@ def create_lookup_dict(infile, id_to_indx=None, indx_to_id=None, pick=False):
             print "Pickled index --> id dictionary into: " + indx_to_id
     # print to test that everything is working
     else:
-        print lookup
-        print lookup2
+        print(json.dumps(lookup, indent=3))
+        print()
+        print(json.dumps(lookup2, indent=3))
 
 def main():
     options, args = parser.parse_args()
