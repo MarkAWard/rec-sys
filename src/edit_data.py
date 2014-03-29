@@ -18,7 +18,10 @@ as command line arguements. The first arguement will be used as the id than in i
 will be created for. If no second arguement is provided, or the second arguement is 
 'none', the unique id's are enumerated in order of appearance. If a second arguement 
 is given, this attribute is used as value by which id's will be sorted by and then
-assigned a unique index. 
+assigned a unique index. The second arguement can be a string in quotes with a simple
+boolean expression to use for filtering. Currently, it only supports a single 
+condition. An exaple of the command line arguements:
+ business_id 'review_count >= 10'
 
 With only these options set the script will print both dictionaries 
 to STDOUT. One dictionary {id: index} and the other {index: id}. This can be 
@@ -43,6 +46,9 @@ examples:
 
  Create dictionaries for review_id from a file and print them to STDOUT
  python edit_data.py -d  -f ../review_file.json review_id  
+
+ Create dictionaries for business_id that have atleast 10 reviews from a file and print them to STDOUT
+ python edit_data.py -d  -f ../business_file.json business_id 'review_count >= 10'
 
 -----Explore Data-----
 
@@ -127,9 +133,7 @@ def iterload(string_or_fp, cls=json.JSONDecoder, **kwargs):
         # skip whitespace till next object
         idx = WHITESPACE.match(string, end).end()
 
-#
-# ONLY for businesses file right now!!
-#
+
 def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=False):
     
     # if output files were not specified and pickling, set them
@@ -150,8 +154,19 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
     if attr2.lower() == "none":
         flag = 1
         count = 0
+    # I want to change this to handle longer boolean exprssions
     if attr2.find(' ') > 0:
         flag =2
+        tmp = attr2.split()
+        if len(tmp) != 3:
+            print "Second arguement must be in form 'attribute op value'"
+            exit()
+        attr2 = tmp[0]
+        op = tmp[1]
+        try:
+            val = float(tmp[2])
+        except ValueError:
+            val = str(tmp[2])
 
     # lookup dictionary to hold id's and index number
     lookup = {}
@@ -195,11 +210,46 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
             # filter by what was given in arg[1]
             if flag == 2:
-                print "Not implemented yet"
-                exit()
+                # make sure a valid attribute name was given
+                try:
+                    attr_value = obj[attr1]
+                except KeyError:
+                    print "ERROR: %s, is not a valid attribute name " %attr1
+                    exit()
+                try:
+                    attr2_value = obj[attr2]
+                    # if attr2 does not satisfy condition continue onwards
+                    if op == '>':
+                        if attr2_value <= val:
+                            continue
+                    elif op == '>=':
+                        if attr2_value < val:
+                            continue
+                    elif op == '<':
+                        if attr2_value >= val:
+                            continue
+                    elif op == '<=':
+                        if attr2_value > val:
+                            continue
+                    elif op == '==':
+                        if attr2_value != val:
+                            continue
+                    elif op == '!=':
+                        if attr2_value == val:
+                            continue
+                    else:
+                        print "ERROR: Do not recognize operator %s" %op
+                except KeyError:
+                    print "ERROR: %s, is not a valid attribute name " %attr2
+                    exit()
+                # upadate dictionary
+                if attr_value not in lookup:
+                    lookup[ attr_value ] = attr2_value
+                else:
+                    print attr_value + " already in lookup dictionary. Skipping duplicate" 
 
     # only sort and add index if flag was 0
-    if flag == 0:
+    if flag == 0 or flag == 2:
         # sort by descending review count in to a list
         sorted_list = sorted(lookup.iteritems(), key=operator.itemgetter(1), reverse=True)
         # change the value in lookup to be index from sorted list
