@@ -1,9 +1,20 @@
+def filter_exp(expr, obj):
+    expr = expr.replace('(', ' ( ').replace(')',' ) ')
+    words = re.split(r'\W+', expr)
+    values= {}
+    # create a dict for desired keys from obj
+    for word in words:
+        try:
+            values[word] = obj[word]
+        except KeyError:
+            # ignore key errors here
+            continue
+    return parse_expression(expr, values)
 
 def parse_expression(expr, values):
     """
     
     """
-    expr = expr.replace('(', ' ( ').replace(')',' ) ')
     # copy expr to create final boolean conditional
     result = expr
     close = expr.find(')')
@@ -40,7 +51,3 @@ def evaluate(left, op, right):
         'or': lambda left, right: left or right 
         }
     return switch[op](left, right)
-
-
-
-
