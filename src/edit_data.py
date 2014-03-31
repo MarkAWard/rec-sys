@@ -85,6 +85,7 @@ import json
 from json.decoder import WHITESPACE
 import operator
 import cPickle as pickle
+import Filter as Flt
 
 # command line parser
 usage = "<script> [args ...]"
@@ -102,18 +103,21 @@ parser.add_option("-p", "--pickle", action="store_true",
 parser.add_option("-d", "--dictionary", action="store_true", 
                   dest="create_dict", default=False, 
                   help="create a lookup dictionary")
-parser.add_option("-e", "--explore", action="store_true", 
-                  dest="explore", default=False, 
-                  help="explore data in a file")
-parser.add_option("-w", "--wait", action="store_true", 
-                  dest="wait", default=False, 
-                  help="print out one object at a time")
 parser.add_option("--id_to_indx", action="store", 
                   dest="id_to_indx", type="string", default=None, 
                   help="file for id to index dict", metavar="FILE")
 parser.add_option("--indx_to_id", action="store", 
                   dest="indx_to_id", type="string", default=None, 
                   help="file for index to id dict", metavar="FILE")
+parser.add_option("-e", "--explore", action="store_true", 
+                  dest="explore", default=False, 
+                  help="explore data in a file")
+parser.add_option("-w", "--wait", action="store_true", 
+                  dest="wait", default=False, 
+                  help="print out one object at a time")
+parser.add_option("-c", "--condition", action="store_true", 
+                  dest="cond", default=False, 
+                  help="use conditional expression for filtering results")
 
 
 # generator function to parse one json object at a time
@@ -275,7 +279,7 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
 
 
-def explore(filename, attrs, wait):
+def explore(filename, attrs, cond=False, wait=False):
     with open(filename, "r") as fp:
         # iterate through objects in file
         for obj in iterload(fp):
@@ -284,13 +288,37 @@ def explore(filename, attrs, wait):
                 print(json.dumps(obj, indent=2))
             # only print out the desired attributes
             else:
-                try:
-                    stuff = {attr: obj[attr] for attr in attrs}
-                except KeyError:
-                    print "ERROR: " + str(attrs) + " contains an invalid attribute name "
-                    exit()
-                print(json.dumps(stuff, indent=2))
-           # wait for user to hit enter to print next object
+                # check if we are going to filter results
+                if cond:
+                    # the only arg given is conditional expression
+                    if len(attrs) == 1:
+                        # test the current object
+                        if Flt.filter_exp(attrs[0], obj):
+                            print(json.dumps(obj, indent=2))
+                        else:
+                            print "skip"
+                    # the last arg is the conditional expression
+                    else:
+                        if Flt.filter_exp(attrs[-1], obj):
+                            try:
+                                stuff = {attr: obj[attr] for attr in attrs[:-1]}
+                                print(json.dumps(stuff, indent=2))
+                            except KeyError:
+                                print "ERROR: " + str(attrs) + " contains an invalid attribute name "
+                                exit()
+                        else:
+                            print "skip2"
+                # don't filter the results
+                else:
+                    # return only the desired attributes
+                    try:
+                        stuff = {attr: obj[attr] for attr in attrs}
+                        print(json.dumps(stuff, indent=2))
+                    except KeyError:
+                        print "ERROR: " + str(attrs) + " contains an invalid attribute name "
+                        exit()
+
+            # wait for user to hit enter to print next object
             if wait:
                 raw_input()
 
@@ -322,7 +350,7 @@ def main():
         if options.file_path == None:
             print "ERROR: Must provide a file to explore"
         else:
-            explore(options.file_path, args, options.wait)
+            explore(options.file_path, args, options.cond, options.wait)
         exit()
 
     exit()
