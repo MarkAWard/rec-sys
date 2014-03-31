@@ -1,3 +1,8 @@
+"""
+TODO: Improve how terms are passed to evaluate()
+      Need to take into account the type of each operand
+"""
+
 import re
 
 def filter_exp(expr, obj):
@@ -32,6 +37,9 @@ def parse_expression(expr, values):
         # found first set of matching parens
         term = expr[ind1+1:close].split()
         # pass each term and operator to be evaluated
+############################################################
+#    Do not pass args to evaluate as str(), remove this    # 
+############################################################
         res = evaluate( str(values[term[0]]), str(term[1]), str(values[term[2]]) )
         # res = True/False, replace term in result with res 
         result = result.replace(expr[ind1+1:close], str(res))
@@ -42,6 +50,9 @@ def parse_expression(expr, values):
     return eval(result)
 
 def evaluate(left, op, right):
+############################################################
+#   FIX HERE how different types should be handled         #
+############################################################
     switch = {
         '<': lambda left, right: left < right, 
         '<=': lambda left, right: left <= right, 
@@ -54,5 +65,4 @@ def evaluate(left, op, right):
         'or': lambda left, right: left or right 
         }
     
-
     return switch[op](left, right)
