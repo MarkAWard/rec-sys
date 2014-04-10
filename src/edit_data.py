@@ -283,20 +283,23 @@ def explore(filename, attrs, cond=False, wait=False):
     with open(filename, "r") as fp:
         # iterate through objects in file
         for obj in iterload(fp):
+
             # print out entire object
             if attrs[0] == "all":
                 print(json.dumps(obj, indent=2))
+
             # only print out the desired attributes
             else:
                 # check if we are going to filter results
                 if cond:
+                
                     # the only arg given is conditional expression
                     if len(attrs) == 1:
                         # test the current object
                         if Flt.filter_exp(attrs[0], obj):
                             print(json.dumps(obj, indent=2))
-                        else:
-                            print "skip"
+                            if wait:
+                                raw_input()
                     # the last arg is the conditional expression
                     else:
                         if Flt.filter_exp(attrs[-1], obj):
@@ -304,10 +307,11 @@ def explore(filename, attrs, cond=False, wait=False):
                                 stuff = {attr: obj[attr] for attr in attrs[:-1]}
                                 print(json.dumps(stuff, indent=2))
                             except KeyError:
-                                print "ERROR: " + str(attrs) + " contains an invalid attribute name "
+                                print "ERROR: " + str(attrs[:-1]) + " contains an invalid attribute name "
                                 exit()
-                        else:
-                            print "skip2"
+                            if wait:
+                                raw_input()
+
                 # don't filter the results
                 else:
                     # return only the desired attributes
@@ -315,13 +319,10 @@ def explore(filename, attrs, cond=False, wait=False):
                         stuff = {attr: obj[attr] for attr in attrs}
                         print(json.dumps(stuff, indent=2))
                     except KeyError:
-                        print "ERROR: " + str(attrs) + " contains an invalid attribute name "
+                        print "ERROR: " + str(attrs[:-1]) + " contains an invalid attribute name "
                         exit()
-
-            # wait for user to hit enter to print next object
-            if wait:
-                raw_input()
-
+                    if wait:
+                        raw_input()
 
 
 
