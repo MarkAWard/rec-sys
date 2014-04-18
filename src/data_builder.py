@@ -20,6 +20,12 @@ Must be set if -p is specified. Given a file name, a pickle will be saved in the
 When creating a matrix of type
  (1) a list of features must be listed as arguments in the same format they were written in the 
      original JSON files. The only exception is that spaces must be written as an underscore (_).
+     If you want a feature that is within another feature, use a dot (.) to seperate them. For 
+     example, businesses have many fields in the 'attributes' field, you can get the 'Has TV'
+     feature by asking for 'attributes.Has_TV'. For fields that are categorical, it will make
+     a new feature for each category, for example 'Good For' can take on values 'dessert', 'dinner',
+     'snacks', etc. Asking for this feature will create features 'goodfordessert', 'goodfordinner',
+     'goodforsnacks', etc.
  (2) must take the value 'text' or 'stars'
 """
 
