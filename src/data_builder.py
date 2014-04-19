@@ -115,15 +115,13 @@ def data_xy_builder(data_type_1, data_type_2, fields):
     with open(data_directory + 'yelp_academic_dataset_review.json') as file:
         for line in file:
             current = json.loads(line)
-            try:
+            if current['user_id'] in x_lookup and current['business_id'] in y_lookup:
                 row.append(x_lookup[current['user_id']])
                 col.append(y_lookup[current['business_id']])
                 val.append(clean(current[type]))
-            except:
-                pass
 
     x = scipy.sparse.coo_matrix((val,(row,col)), shape=(len(x_lookup),len(y_lookup)))
-
+    print x
     return x
 
 def clean(incoming):
