@@ -121,6 +121,9 @@ parser.add_option("-w", "--wait", action="store_true",
 parser.add_option("-c", "--condition", action="store_true", 
                   dest="cond", default=False, 
                   help="use conditional expression for filtering results")
+parser.add_option("-q", "--quiet", action="store_true", 
+                  dest="quiet", default=False, 
+                  help="suppress some print statements")
 
 
 # generator function to parse one json object at a time
@@ -156,14 +159,16 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
     # set attr1/2 to correct values
     # attr1 used as unique id
-    if len(args) == 3:
-        attr1 = args[0]
-        # skip leading whitespace
-        attr2 = args[1][WHITESPACE.match(args[1],0).end():]
-    if len(args) == 2:
-        attr1 = args[0]
-        # skip leading whitespace
-        attr2 = 'none'
+    attr1 = args[0]
+    attr2 = "none"
+    if cond:
+        if len(args) == 3:
+            attr2 = args[1]
+        if len(args) > 3:
+            print "ERROR: invalid number of arguments"
+    else:
+        if len(args) == 2:
+            attr2 = args[1]
 
     flag = 0
     if attr2.lower() == "none":
@@ -245,14 +250,19 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
 
 
-def explore(filename, attrs, cond=False, wait=False):
+def explore(filename, attrs, cond=False, wait=False, quiet=False):
+    count = 0
+    if quiet:
+        wait = False
     with open(filename, "rb") as fp:
         # iterate through objects in file
         for obj in iterload(fp):
 
             # print out entire object
             if attrs[0] == "all":
-                print(json.dumps(obj, indent=2))
+                if not quiet:
+                    print(json.dumps(obj, indent=2))
+                count += 1
                 if wait:
                     raw_input()
 
@@ -265,7 +275,9 @@ def explore(filename, attrs, cond=False, wait=False):
                     if len(attrs) == 1:
                         # test the current object
                         if Flt.filter_exp(attrs[0], obj):
-                            print(json.dumps(obj, indent=2))
+                            if not quiet:
+                                print(json.dumps(obj, indent=2))
+                            count += 1
                             if wait:
                                 raw_input()
                     # the last arg is the conditional expression
@@ -273,7 +285,9 @@ def explore(filename, attrs, cond=False, wait=False):
                         if Flt.filter_exp(attrs[-1], obj):
                             try:
                                 stuff = {attr: obj[attr] for attr in attrs[:-1]}
-                                print(json.dumps(stuff, indent=2))
+                                if not quiet:
+                                    print(json.dumps(stuff, indent=2))
+                                count += 1
                             except KeyError:
                                 print "ERROR: " + str(attrs[:-1]) + " contains an invalid attribute name "
                                 exit()
@@ -285,12 +299,15 @@ def explore(filename, attrs, cond=False, wait=False):
                     # return only the desired attributes
                     try:
                         stuff = {attr: obj[attr] for attr in attrs}
-                        print(json.dumps(stuff, indent=2))
+                        if not quiet:
+                            print(json.dumps(stuff, indent=2))
+                        count += 1
                     except KeyError:
                         print "ERROR: " + str(attrs[:-1]) + " contains an invalid attribute name "
                         exit()
                     if wait:
                         raw_input()
+        print "Total objects found: " + str(count)
 
 
 
@@ -322,7 +339,7 @@ def main():
             print "ERROR: Must provide a file to explore"
         else:
             path = data_directory + 'yelp_academic_dataset_' + options.file_path + '.json'
-            explore(path, args, options.cond, options.wait)
+            explore(path, args, options.cond, options.wait, options.quiet)
         exit()
 
     exit()
