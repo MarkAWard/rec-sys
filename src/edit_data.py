@@ -80,12 +80,18 @@ examples:
 """
 
 import sys
+import os
 from optparse import OptionParser
 import json
 from json.decoder import WHITESPACE
 import operator
 import cPickle as pickle
 import Filter as Flt
+
+# pickle directory
+pickle_directory = os.path.expanduser('~/Dropbox/yelp-rec-sys/pickle/')
+# data directory
+data_directory = os.path.expanduser('~/Dropbox/yelp-rec-sys/data/')
 
 # command line parser
 usage = "<script> [args ...]"
@@ -140,16 +146,24 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
     # if output files were not specified and pickling, set them
     if pick:
         if id_to_indx == None:
-            id_to_indx = "id_to_indx.p" 
+            id_to_indx = pickle_directory + "id_to_indx.p"
+        else:
+            id_to_indx = pickle_directory + id_to_indx 
         if indx_to_id == None:
-            indx_to_id = "indx_to_id.p" 
+            indx_to_id = pickle_directory + "indx_to_id.p" 
+        else:
+            indx_to_id = pickle_directory + indx_to_id 
 
     # set attr1/2 to correct values
     # attr1 used as unique id
-    if len(args) >= 2:
+    if len(args) == 3:
         attr1 = args[0]
         # skip leading whitespace
         attr2 = args[1][WHITESPACE.match(args[1],0).end():]
+    if len(args) == 2:
+        attr1 = args[0]
+        # skip leading whitespace
+        attr2 = 'none'
 
     flag = 0
     if attr2.lower() == "none":
@@ -158,7 +172,7 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
     # lookup dictionary to hold id's and index number
     lookup = {}
-    with open(infile, "r") as fp:
+    with open(infile, "rb") as fp:
         # iterate through objects in file
         for obj in iterload(fp):
 
@@ -232,7 +246,7 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
 
 def explore(filename, attrs, cond=False, wait=False):
-    with open(filename, "r") as fp:
+    with open(filename, "rb") as fp:
         # iterate through objects in file
         for obj in iterload(fp):
 
@@ -287,10 +301,11 @@ def main():
     # must provide file and attributes
     if options.create_dict:
         if options.file_path != None and len(args) >= 1:
+            path = data_directory + 'yelp_academic_dataset_' + options.file_path + '.json'
             if len(args) == 1:
                 args.append("none")
             print "creating a lookup dictionary from " + options.file_path 
-            create_lookup_dict(options.file_path, args, 
+            create_lookup_dict( path, args, 
                                id_to_indx=options.id_to_indx, 
                                indx_to_id=options.indx_to_id, 
                                pick=options.create_pickle,
@@ -306,7 +321,8 @@ def main():
         if options.file_path == None:
             print "ERROR: Must provide a file to explore"
         else:
-            explore(options.file_path, args, options.cond, options.wait)
+            path = data_directory + 'yelp_academic_dataset_' + options.file_path + '.json'
+            explore(path, args, options.cond, options.wait)
         exit()
 
     exit()
