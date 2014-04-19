@@ -94,9 +94,6 @@ parser = OptionParser(usage=usage, description=description)
 parser.add_option("-f", "--file", action="store", 
                   dest="file_path", type="string", default=None, 
                   help="path to data file", metavar="FILE")
-parser.add_option("-o", "--output_file", action="store", 
-                  dest="out_file", type="string", default=None, 
-                  help="file to put output in", metavar="FILE")
 parser.add_option("-p", "--pickle", action="store_true", 
                   dest="create_pickle", default=False,
                   help="pickle the output object")
@@ -138,7 +135,7 @@ def iterload(string_or_fp, cls=json.JSONDecoder, **kwargs):
         idx = WHITESPACE.match(string, end).end()
 
 
-def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=False):
+def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=False, cond=False):
     
     # if output files were not specified and pickling, set them
     if pick:
@@ -158,19 +155,6 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
     if attr2.lower() == "none":
         flag = 1
         count = 0
-    # I want to change this to handle longer boolean exprssions
-    if attr2.find(' ') > 0:
-        flag =2
-        tmp = attr2.split()
-        if len(tmp) != 3:
-            print "Second arguement must be in form 'attribute op value'"
-            exit()
-        attr2 = tmp[0]
-        op = tmp[1]
-        try:
-            val = float(tmp[2])
-        except ValueError:
-            val = str(tmp[2])
 
     # lookup dictionary to hold id's and index number
     lookup = {}
@@ -180,6 +164,10 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
             # use args[0] and args[1] as given
             if flag == 0:
+                # check if we are filtering, test obj is cond=True
+                if cond and not Flt.filter_exp(args[-1], obj):
+                    continue
+
                 # make sure a valid attribute name was given
                 try:
                     attr_value = obj[attr1]
@@ -199,6 +187,10 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
 
             # use args[0] as id/attr1 and attr2 will be index
             if flag == 1:
+                # check if we are filtering, test obj is cond=True
+                if cond and not Flt.filter_exp(args[-1], obj):
+                    continue
+
                 # make sure a valid attribute name was given
                 try:
                     attr_value = obj[attr1]
@@ -212,48 +204,8 @@ def create_lookup_dict(infile, args, id_to_indx=None, indx_to_id=None, pick=Fals
                 else:
                     print attr_value + " already in lookup dictionary. Skipping duplicate" 
 
-            # filter by what was given in arg[1]
-            if flag == 2:
-                # make sure a valid attribute name was given
-                try:
-                    attr_value = obj[attr1]
-                except KeyError:
-                    print "ERROR: %s, is not a valid attribute name " %attr1
-                    exit()
-                try:
-                    attr2_value = obj[attr2]
-                    # if attr2 does not satisfy condition continue onwards
-                    if op == '>':
-                        if attr2_value <= val:
-                            continue
-                    elif op == '>=':
-                        if attr2_value < val:
-                            continue
-                    elif op == '<':
-                        if attr2_value >= val:
-                            continue
-                    elif op == '<=':
-                        if attr2_value > val:
-                            continue
-                    elif op == '==':
-                        if attr2_value != val:
-                            continue
-                    elif op == '!=':
-                        if attr2_value == val:
-                            continue
-                    else:
-                        print "ERROR: Do not recognize operator %s" %op
-                except KeyError:
-                    print "ERROR: %s, is not a valid attribute name " %attr2
-                    exit()
-                # upadate dictionary
-                if attr_value not in lookup:
-                    lookup[ attr_value ] = attr2_value
-                else:
-                    print attr_value + " already in lookup dictionary. Skipping duplicate" 
-
     # only sort and add index if flag was 0
-    if flag == 0 or flag == 2:
+    if flag == 0:
         # sort by descending review count in to a list
         sorted_list = sorted(lookup.iteritems(), key=operator.itemgetter(1), reverse=True)
         # change the value in lookup to be index from sorted list
@@ -287,6 +239,8 @@ def explore(filename, attrs, cond=False, wait=False):
             # print out entire object
             if attrs[0] == "all":
                 print(json.dumps(obj, indent=2))
+                if wait:
+                    raw_input()
 
             # only print out the desired attributes
             else:
@@ -339,7 +293,8 @@ def main():
             create_lookup_dict(options.file_path, args, 
                                id_to_indx=options.id_to_indx, 
                                indx_to_id=options.indx_to_id, 
-                               pick=options.create_pickle)
+                               pick=options.create_pickle,
+                               cond=options.cond)
         else:
             print "ERROR: Must specify an input file and atleast one attribute for the id"
         exit()
