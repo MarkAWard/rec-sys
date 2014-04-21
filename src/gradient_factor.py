@@ -22,23 +22,23 @@ np.dot(u, v.T)
 """
 
 # working for dense
-def d_factorize(X, K, steps=1000, alpha=0.001):
+def d_factorize(X, K, steps=1000, alpha=0.0001):
     iters = 0
     U = np.random.rand(X.shape[0],K)
     V = np.random.rand(X.shape[1],K)
     W = np.array(X, copy=True)
     W[ W > 0 ] = 1 
     while iters < steps:
-        Res = W * (X - np.dot(U, V.T))
+        Res = np.array(W) * np.array(X - np.dot(U, V.T))
         SqErr = sum(sum( Res**2 )) 
-        if iters % 50 == 0:
+        if iters % 1 == 0:
             print "%d\t%f" %(iters, SqErr)
         if SqErr < 0.001:
             break
 
         for i in xrange(len(U)):
             U[i] = U[i] + 2 * alpha * np.dot(Res[i], V)
-        Res = W * (X - np.dot(U, V.T))
+        Res = np.array(W) * np.array(X - np.dot(U, V.T))
         for i in xrange(len(V)):
             V[i] = V[i] + 2 * alpha * np.dot(Res[:,i], U)
         
