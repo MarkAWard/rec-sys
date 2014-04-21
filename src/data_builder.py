@@ -7,9 +7,14 @@ This script can create two types of files
 
 The following flags are used,
 
--d [user|business|user+business]
-When used with user or business, a data frame of type (1) listed above will be created, when
-used with user+business, the second type (2) will be created
+-u / -b
+Utilize user or business data. Call both flags to create a user-business data matrix
+
+--user_lookup
+Filename of the user_lookup file
+
+--business_lookup
+Filename of the business_lookup file
 
 -p
 Set if a pickle object should be saved
@@ -51,18 +56,27 @@ usage = "<script> [args ...]"
 description = "Script for building data matrix objects."
 
 parser = OptionParser(usage=usage, description=description)
-parser.add_option("-d", "--data", action="store", 
-                  dest="data_type", type="string", default=None, 
-                  help="type of data")
+parser.add_option("-u", "--user", action="store_true", 
+                  dest="data_type_user", default=False,
+                  help="use the user data")
+parser.add_option("-b", "--business", action="store_true", 
+                  dest="data_type_business", default=False,
+                  help="use the business data")
 parser.add_option("-p", "--pickle", action="store_true", 
                   dest="create_pickle", default=False,
                   help="pickle the output object")
+parser.add_option("--user_lookup", action="store", 
+                  dest="user_lookup", type="string", default=None, 
+                  help="file for data matrix", metavar="FILE")
+parser.add_option("--business_lookup", action="store", 
+                  dest="business_lookup", type="string", default=None, 
+                  help="file for data matrix", metavar="FILE")
 parser.add_option("--matrix_file", action="store", 
                   dest="matrix_file", type="string", default=None, 
                   help="file for data matrix", metavar="FILE")
 
-def data_x_builder(data_type, fields):
-    lookup = pickle.load(open(pickle_directory + data_type + 'id_to_indx.p', "rb" ))
+def data_x_builder(data_type, lookup_file, fields):
+    lookup = pickle.load(open(pickle_directory + lookup_file, "rb" ))
 
     x = pd.DataFrame()
 
@@ -102,9 +116,9 @@ def data_x_builder(data_type, fields):
     print x.ix[0:4,]
     return x
 
-def data_xy_builder(data_type_1, data_type_2, fields):
-    x_lookup = pickle.load(open(pickle_directory + 'userid_to_indx.p', "rb" ))
-    y_lookup = pickle.load(open(pickle_directory + 'businessid_to_indx.p', "rb" ))
+def data_xy_builder(data_type_1, data_type_2, lookup_file_1, lookup_file_2, fields):
+    x_lookup = pickle.load(open(pickle_directory + lookup_file_1, "rb" ))
+    y_lookup = pickle.load(open(pickle_directory + lookup_file_2, "rb" ))
 
     row = []
     col = []
@@ -133,17 +147,31 @@ def clean(incoming):
 def main():
     options, args = parser.parse_args()
 
-    data_type = options.data_type.split('+')
+    data_type_user = options.data_type_user
+    data_type_business = options.data_type_business
 
-    if len(data_type) == 1:
-        data_type = data_type[0]
-        x = data_x_builder(data_type, args)
-    else:
-        data_type_1 = data_type[0]
-        data_type_2 = data_type[1]
+
+    if data_type_user and data_type_business:
+        data_type_1 = 'user'
+        data_type_2 = 'business'
         data_type = data_type_1 + '+' + data_type_2
-        x = data_xy_builder(data_type_1, data_type_2, args)
+        
+        lookup_file_1 = options.user_lookup
+        lookup_file_2 = options.business_lookup
+        
+        x = data_xy_builder(data_type_1, data_type_2, lookup_file_1, lookup_file_2, args)
+    
+    elif data_type_user:
+        data_type = 'user'
+        lookup_file = options.user_lookup
+        x = data_x_builder(data_type, lookup_file, args)
+    
+    elif data_type_business:
+        data_type = 'business'
+        lookup_file = options.business_lookup
+        x = data_x_builder(data_type, lookup_file, args)
 
+        
     pick = options.create_pickle
 
     if pick:
