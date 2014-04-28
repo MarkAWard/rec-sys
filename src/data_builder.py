@@ -169,7 +169,7 @@ def data_xy_builder(lookup_file_1, lookup_file_2, prefix):
     print "\n"
 
     user_keep = np.where(user_sum >= 5)[0]
-    business_keep = np.where(business_sum >= 5)[0]
+    business_keep = np.where(business_sum >= 1)[0]
 
     i = 0
     x_lookup_new = {}
@@ -200,6 +200,25 @@ def data_xy_builder(lookup_file_1, lookup_file_2, prefix):
     print "Number of businesses : " + str(len(y_lookup))
     print "Smallest number of reviews for a business: " + str(business_sum.min())
     print "\n"
+
+    plt.subplot(2,2,1)
+    plt.hist(user_sum, user_sum.max())
+    plt.title('Num. of Users (y-axis) that have x reviews (x-axis)')
+
+    plt.subplot(2,2,2)
+    plt.hist(user_sum, user_sum.max())
+    plt.title('Num. of Users (y-axis) that have x reviews (x-axis) [truncated x-axis]')
+    plt.xlim(0,50)
+
+    plt.subplot(2,2,3)
+    plt.hist(business_sum, business_sum.max())
+    plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis)')
+
+    plt.subplot(2,2,4)
+    plt.hist(business_sum, business_sum.max())
+    plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis) [truncated x-axis]')
+    plt.xlim(0,50)
+    plt.show()
 
 
     train_col = []
