@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 from scipy import sparse, optimize
+from sklearn.decomposition import TruncatedSVD
 
 def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lambd=0.1, alpha=.0001, tol=0.001):
     """
@@ -115,6 +116,46 @@ def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
         iters += 1
 
     return U, V
+
+
+def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
+    if initial:
+        U = initial[0]
+        V = initial[1]
+    else:
+        shape = R.shape
+        U = np.matrix(np.random.rand(shape[0],K)) 
+        V = np.matrix(np.random.rand(shape[1],K)) 
+
+    W = np.array(R, copy=True)
+    W[ W > 0 ] = 1
+
+    if K > L:
+        L = K
+
+    iters = 0
+    converged = False
+    while iters < steps and not converged:
+        Tsvd = TruncatedSVD(n_components = L, n_iterations=subiter)
+        X =  np.multiply(W, R) + np.multiply((1 - W), R_hat)
+        f = tsvd.fit( X )
+        v = f.components_
+        u = tsvd.fit_transform(data_stars_train)
+        R_hat = np.array(np.matrix(u) * np.matrix(v));
+        
+        if L > K:
+            L -= 1
+
+        res = np.multiply(W, R - R_hat)
+        err = np.ravel(res)
+        sse = np.dot(err, err)
+        print "%d\t%f" %(iters, sse)
+        
+        if sse < tol:
+            converged = True
+        iters += 1
+
+    return 
 
 
 # working for dense
