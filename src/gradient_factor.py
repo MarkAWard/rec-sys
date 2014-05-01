@@ -87,12 +87,15 @@ def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lamb
     return U, V
 
 
-def SGD(Ratings, K, steps=1000, alpha=0.001, lambd=0.01, tol=0.001):
+def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
 
-    shape = ( np.max( Ratings[0] ) + 1, np.max( Ratings[1]) + 1 )
-
-    U = np.matrix(np.random.rand(shape[0],K)) 
-    V = np.matrix(np.random.rand(shape[1],K)) 
+    if initial:
+        U = initial[0]
+        V = initial[1]
+    else:
+        shape = ( np.max( Ratings[0] ) + 1, np.max( Ratings[1]) + 1 )
+        U = np.matrix(np.random.rand(shape[0],K)) 
+        V = np.matrix(np.random.rand(shape[1],K)) 
 
     iters = 0
     converged = False
