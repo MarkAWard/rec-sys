@@ -138,9 +138,10 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
     print "Starting..."
     while iters < steps and not converged:
         tsvd = TruncatedSVD(n_components = L, n_iterations=subiter)
-        f = tsvd.fit( np.multiply(W, R) + np.multiply((1 - W), R_hat) )
+        x = np.multiply(W, R) + np.multiply((1 - W), R_hat)
+	f = tsvd.fit( x )
         v = f.components_
-        u = tsvd.fit_transform(data_stars_train)
+        u = tsvd.fit_transform(x)
         R_hat = np.array(np.matrix(u) * np.matrix(v));
         
         if L > K:
