@@ -87,6 +87,9 @@ parser.add_option("-u", "--user", action="store_true",
 parser.add_option("-b", "--business", action="store_true", 
                   dest="data_type_business", default=False,
                   help="use the business data")
+parser.add_option("-a", "--arrays", action="store_false", 
+                  dest="create_matrix", default=True,
+                  help="arrays instead of sparse matrix")
 parser.add_option("-p", "--pickle", action="store_true", 
                   dest="create_pickle", default=False,
                   help="pickle the output object")
@@ -98,7 +101,10 @@ parser.add_option("--business_lookup", action="store",
                   help="file for data matrix", metavar="FILE")
 parser.add_option("--prefix", action="store", 
                   dest="prefix", type="string", default=None, 
-                  help="prefix for save files", metavar="FILE")
+                  help="prefix for file names")
+parser.add_option("--no_plot", action="store_false", 
+                  dest="plot", default=True, 
+                  help="No plotting")
 
 def data_x_builder(data_type, lookup_file, prefix, fields):
     lookup = pickle.load(open(pickle_directory + lookup_file, "rb" ))
@@ -152,7 +158,7 @@ def data_x_builder(data_type, lookup_file, prefix, fields):
     pickle_object(x, prefix + '_' + data_type + '.p', data_type + 'data frame')
 
 
-def data_xy_builder(lookup_file_1, lookup_file_2, prefix):
+def data_xy_builder(lookup_file_1, lookup_file_2, prefix, matrix=True, plot=True):
     x_lookup = pickle.load(open(pickle_directory + lookup_file_1, "rb" ))
     y_lookup = pickle.load(open(pickle_directory + lookup_file_2, "rb" ))
 
@@ -201,24 +207,26 @@ def data_xy_builder(lookup_file_1, lookup_file_2, prefix):
     print "Smallest number of reviews for a business: " + str(business_sum.min())
     print "\n"
 
-    plt.subplot(2,2,1)
-    plt.hist(user_sum, user_sum.max())
-    plt.title('Num. of Users (y-axis) that have x reviews (x-axis)')
+    if plot:
+    
+        plt.subplot(2,2,1)
+        plt.hist(user_sum, user_sum.max())
+        plt.title('Num. of Users (y-axis) that have x reviews (x-axis)')
 
-    plt.subplot(2,2,2)
-    plt.hist(user_sum, user_sum.max())
-    plt.title('Num. of Users (y-axis) that have x reviews (x-axis) [truncated x-axis]')
-    plt.xlim(0,50)
+        plt.subplot(2,2,2)
+        plt.hist(user_sum, user_sum.max())
+        plt.title('Num. of Users (y-axis) that have x reviews (x-axis) [truncated x-axis]')
+        plt.xlim(0,50)
 
-    plt.subplot(2,2,3)
-    plt.hist(business_sum, business_sum.max())
-    plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis)')
+        plt.subplot(2,2,3)
+        plt.hist(business_sum, business_sum.max())
+        plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis)')
 
-    plt.subplot(2,2,4)
-    plt.hist(business_sum, business_sum.max())
-    plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis) [truncated x-axis]')
-    plt.xlim(0,50)
-    plt.show()
+        plt.subplot(2,2,4)
+        plt.hist(business_sum, business_sum.max())
+        plt.title('Num. of Businesses (y-axis) that have x reviews (x-axis) [truncated x-axis]')
+        plt.xlim(0,50)
+        plt.show()
 
 
     train_col = []
@@ -262,26 +270,43 @@ def data_xy_builder(lookup_file_1, lookup_file_2, prefix):
         if i == (x_stars.shape[0] - 1):
             print " ... Done"
 
-    x_train_stars = scipy.sparse.csr_matrix((train_val_stars,(train_row,train_col)), shape=(len(x_lookup),len(y_lookup)))
-    x_validate_stars = scipy.sparse.csr_matrix((validate_val_stars,(validate_row,validate_col)), shape=(len(x_lookup),len(y_lookup)))
-    x_test_stars = scipy.sparse.csr_matrix((test_val_stars,(test_row,test_col)), shape=(len(x_lookup),len(y_lookup)))
 
-    # x_train_text = scipy.sparse.csr_matrix((train_val_text,(train_row,train_col)), shape=(len(x_lookup),len(y_lookup)))
-    # x_validate_text = scipy.sparse.csr_matrix((validate_val_text,(validate_row,validate_col)), shape=(len(x_lookup),len(y_lookup)))
-    # x_test_text = scipy.sparse.csr_matrix((test_val_text,(test_row,test_col)), shape=(len(x_lookup),len(y_lookup)))
-    
-    print '\n'
-    print 'Saving objects to pickles...'
-    pickle_object(x_train_stars, prefix + '_stars_train.p', 'stars train matrix')
-    pickle_object(x_validate_stars, prefix + '_stars_validate.p', 'stars validate matrix')
-    pickle_object(x_test_stars, prefix + '_stars_test.p', 'stars test matrix')
-    # pickle_object(x_train_text, prefix + '_text_train.p', 'stars train matrix')
-    # pickle_object(x_validate_text, prefix + '_text_validate.p', 'stars validate matrix')
-    # pickle_object(x_test_text, prefix + '_text_test.p', 'stars test matrix')
+    # create sparse matrix object
+    if matrix:
+        x_train_stars = scipy.sparse.csr_matrix((train_val_stars,(train_row,train_col)), shape=(len(x_lookup),len(y_lookup)))
+        x_validate_stars = scipy.sparse.csr_matrix((validate_val_stars,(validate_row,validate_col)), shape=(len(x_lookup),len(y_lookup)))
+        x_test_stars = scipy.sparse.csr_matrix((test_val_stars,(test_row,test_col)), shape=(len(x_lookup),len(y_lookup)))
+
+        # x_train_text = scipy.sparse.csr_matrix((train_val_text,(train_row,train_col)), shape=(len(x_lookup),len(y_lookup)))
+        # x_validate_text = scipy.sparse.csr_matrix((validate_val_text,(validate_row,validate_col)), shape=(len(x_lookup),len(y_lookup)))
+        # x_test_text = scipy.sparse.csr_matrix((test_val_text,(test_row,test_col)), shape=(len(x_lookup),len(y_lookup)))
+        
+        print '\n'
+        print 'Saving objects to pickles...'
+        pickle_object(x_train_stars, prefix + '_stars_train.p', 'stars train matrix')
+        pickle_object(x_validate_stars, prefix + '_stars_validate.p', 'stars validate matrix')
+        pickle_object(x_test_stars, prefix + '_stars_test.p', 'stars test matrix')
+        # pickle_object(x_train_text, prefix + '_text_train.p', 'stars train matrix')
+        # pickle_object(x_validate_text, prefix + '_text_validate.p', 'stars validate matrix')
+        # pickle_object(x_test_text, prefix + '_text_test.p', 'stars test matrix')
+
+    # do not create matrix, only save the array of indices and data
+    else:
+        x_train_stars = np.vstack( (train_row, train_col, train_val_stars) )
+        x_validate_stars = np.vstack( (validate_row, validate_col, validate_val_stars) )
+        x_test_stars = np.vstack( (test_row, test_col, test_val_stars) )
+
+        print '\n'
+        print 'Saving objects to pickles...'
+        pickle_object(x_train_stars, prefix + '_arr_stars_train.p', 'stars train data array')
+        pickle_object(x_validate_stars, prefix + '_arr_stars_validate.p', 'stars validate data array')
+        pickle_object(x_test_stars, prefix + '_arr_stars_test.p', 'stars test data array')
+        
     pickle_object(x_lookup, prefix + '_user_hash_to_idx.p', 'user hash to idx lookup')
     pickle_object({v:k for k, v in x_lookup.items()}, prefix + '_idx_to_user_hash.p', 'idx to user hash lookup')
     pickle_object(y_lookup, prefix + '_business_hash_to_idx.p', 'business hash to idx lookup')
     pickle_object({v:k for k, v in y_lookup.items()}, prefix + '_idx_to_business_hash.p', 'idx to business hash lookup')
+
 
 def pickle_object(object, prefix, type):
     output_file = pickle_directory + prefix
@@ -330,13 +355,15 @@ def main():
 
     data_type_user = options.data_type_user
     data_type_business = options.data_type_business
+    create_matrix = options.create_matrix
     prefix = options.prefix
+    plot = options.plot
 
     if data_type_user and data_type_business:
         print 'Building user + business matrices'
         lookup_file_1 = options.user_lookup
         lookup_file_2 = options.business_lookup
-        data_xy_builder(lookup_file_1, lookup_file_2, prefix)
+        data_xy_builder(lookup_file_1, lookup_file_2, prefix, matrix=create_matrix, plot=plot)
     
     elif data_type_user:
         print 'Building user data frame...'
