@@ -122,10 +122,10 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
     if initial:
         U = initial[0]
         V = initial[1]
+        R_hat = U * V.T
     else:
         shape = R.shape
-        U = np.matrix(np.random.rand(shape[0],K)) 
-        V = np.matrix(np.random.rand(shape[1],K)) 
+        R_hat = np.zeros(shape)
 
     W = np.array(R, copy=True)
     W[ W > 0 ] = 1
@@ -135,10 +135,10 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
 
     iters = 0
     converged = False
+    print "Starting..."
     while iters < steps and not converged:
-        Tsvd = TruncatedSVD(n_components = L, n_iterations=subiter)
-        X =  np.multiply(W, R) + np.multiply((1 - W), R_hat)
-        f = tsvd.fit( X )
+        tsvd = TruncatedSVD(n_components = L, n_iterations=subiter)
+        f = tsvd.fit( np.multiply(W, R) + np.multiply((1 - W), R_hat) )
         v = f.components_
         u = tsvd.fit_transform(data_stars_train)
         R_hat = np.array(np.matrix(u) * np.matrix(v));
@@ -155,7 +155,7 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
             converged = True
         iters += 1
 
-    return 
+    return u, v
 
 
 # working for dense
