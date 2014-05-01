@@ -87,7 +87,9 @@ def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lamb
     return U, V
 
 
-def SGD(Row, Col, Ratings, shape, K, steps=1000, alpha=0.001, lambd=0.01, tol=0.001):
+def SGD(Ratings, K, steps=1000, alpha=0.001, lambd=0.01, tol=0.001):
+
+    shape = ( np.max( Ratings[0] ) + 1, np.max( Ratings[1]) + 1 )
 
     U = np.matrix(np.random.rand(shape[0],K)) 
     V = np.matrix(np.random.rand(shape[1],K)) 
@@ -96,17 +98,18 @@ def SGD(Row, Col, Ratings, shape, K, steps=1000, alpha=0.001, lambd=0.01, tol=0.
     converged = False
     while iters < steps and not converged:
         res = 0.0
-        for i, j, rating in zip(Row, Col, Ratings):
-            err = rating - np.dot(U[i], V[j])
-            U[i] = U[i] - alpha * (lambd * U[i] + err * V[j])
-            V[j] = V[j] - alpha * (lambd * V[j] + err * U[i])
+        for i, j, rating in zip(Ratings[0], Ratings[1], Ratings[2] ):
+            err = rating - np.dot(U[i], V[j].T)
+            U[i] = U[i] + alpha * (lambd * U[i] + err * V[j])
+            V[j] = V[j] + alpha * (lambd * V[j] + err * U[i])
             
-            res += np.abs( rating - np.dot(U[i], V[j]) )
+            res += np.abs( rating - np.dot( U[i], V[j].T )  )
         
         avg_sq_er = res/len(Ratings)
         if avg_sq_er < tol:
             converged = True
         print "%d\t%f" %(iters, avg_sq_er)
+        iters += 1
 
     return U, V
 
@@ -241,8 +244,8 @@ def line_search(res, R, W, U, V):
     return alpha0
 
 
-X = np.matrix(np.random.random_integers(0,200,size=(800,500)))
-X[X > 5] = 0
-a, b = weighted_low_rank_factorization(X, 10, method='nmf', steps=100, lambd=0.01, alpha=.0000001)
-print X
-print a * b.T
+#X = np.matrix(np.random.random_integers(0,200,size=(800,500)))
+#X[X > 5] = 0
+#a, b = weighted_low_rank_factorization(X, 10, method='nmf', steps=100, lambd=0.01, alpha=.0000001)
+#print X
+#print a * b.T
