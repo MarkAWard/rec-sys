@@ -69,6 +69,12 @@ def rmse(predicted, truth):
             sum += math.pow(p_s - t_s, 2)
             n += 1
         except:
-            pass
+            p_s = 0
+            sum += math.pow(p_s - t_s, 2)
+            n += 1
 
-    return math.sqrt(sum/n)
+    if n != 0:
+        return math.sqrt(sum/n)
+    else:
+        print 'Returning None. No values could be compared. Are you sure the predictions were made?'
+        return None
