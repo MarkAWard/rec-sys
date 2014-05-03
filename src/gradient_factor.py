@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import inv
 from scipy import sparse, optimize
 from sklearn.decomposition import TruncatedSVD
+import cPickle
 
 def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lambd=0.1, alpha=.0001, tol=0.001):
     """
@@ -118,7 +119,25 @@ def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
     return U, V
 
 
-def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
+def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=True, u_pick="Umatrix.p", v_pick="Vmatrix"):
+    """
+    R = Ratings matrix
+    K = int, number of components to learn
+    L = int, start with L components and decrease slowly to K
+    steps = int, max number of iterations to run
+    subiter = int, number of iterations to use for truncated SVD
+    initial = tuple, (u, v) 
+    tol = float, tolerance for convergence
+    pickle = boolean, picklen u and v every 200 iterations
+    u_pick = string, file name for U pickle
+    v_pick = string, file name for V pickle
+
+    L will be decreased by 1 every 5 iterations till L = K. Note the loss function is not strictly decreasing, when L 
+    is decremented the loss function typically increases but immediately begins to decrease while L does not change.
+    So don't make L too big. Ensure that: steps >> 5*(K - L)
+    I don't know about the stability of the truncated SVD so I don't suggest incresing subiter by too much.
+    """
+
     if initial:
         U = initial[0]
         V = initial[1]
@@ -138,24 +157,31 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=50, initial=None, tol=0.01):
     print "Starting..."
     while iters < steps and not converged:
         tsvd = TruncatedSVD(n_components = L, n_iterations=subiter)
-        x = np.multiply(W, R) + np.multiply((1 - W), R_hat)
-	f = tsvd.fit( x )
-        v = f.components_
-        u = tsvd.fit_transform(x)
+        X = np.multiply(W, R) + np.multiply((1 - W), R_hat)
+	transformer = tsvd.fit( X )
+        v = transformer.components_
+        u = tsvd.fit_transform( X )
         R_hat = np.array(np.matrix(u) * np.matrix(v));
         
-        if L > K:
+        if L > K and iters % 5 == 0:
             L -= 1
 
         res = np.multiply(W, R - R_hat)
         err = np.ravel(res)
         sse = np.dot(err, err)
         print "%d\t%f" %(iters, sse)
+
+        if iters % 200 == 0 and pickle:
+            cPickle.dump(u, open(u_pick, "wb"))
+            cPickle.dump(v, open(v_pick, "wb"))
         
-        if sse < tol:
+        if sse < tol and L == K:
             converged = True
         iters += 1
 
+    cPickle.dump(u, open(u_pick, "wb"))
+    cPickle.dump(v, open(v_pick, "wb"))
+    
     return u, v
 
 
