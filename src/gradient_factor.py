@@ -119,7 +119,7 @@ def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
     return U, V
 
 
-def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=True, u_pick="Umatrix.p", v_pick="Vmatrix"):
+def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=True, u_pick="Umatrix.p", v_pick="Vmatrix.p"):
     """
     R = Ratings matrix
     K = int, number of components to learn
