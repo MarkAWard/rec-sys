@@ -166,10 +166,11 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=Tru
         if L > K and iters % 5 == 0:
             L -= 1
 
-        res = np.multiply(W, R - R_hat)
-        err = np.ravel(res)
-        sse = np.dot(err, err)
-        print "%d\t%f" %(iters, sse)
+        if iters % 2 == 0:
+            res = np.multiply(W, R - R_hat)
+            err = np.ravel(res)
+            sse = np.dot(err, err)
+            print "%d\t%f" %(iters, sse)
 
         if iters % 200 == 0 and pickle:
             cPickle.dump(u, open(u_pick, "wb"))
