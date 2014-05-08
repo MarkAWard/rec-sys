@@ -143,6 +143,8 @@ def main():
 
     # Iterate and update the weights for explicit and implicit
     for iteration in range(20):
+	sse = 0
+	sse_n = 0
         print 'Iteration ' + str(iteration + 1)
         for k, u in enumerate(R_row):
             i = R_col[k]
@@ -164,6 +166,8 @@ def main():
             r_hat = mu + b_u[u] + b_i[i] + pow1 * sigma_r + pow1 * sigma_n
             
             err = R[u, i] - r_hat
+            sse += np.power(err, 2)
+            sse_n += 1
 
             b_u[u] += g * (err - l5 * b_u[u])
             b_i[i] += g * (err - l5 * b_i[i])
@@ -174,7 +178,7 @@ def main():
             if k % 10 == 0 or k == (len(R_row) - 1):
                 sys.stdout.write('\r' + str(round(float(k)/(len(R_row) - 1) * 100, 2)) + '%    ')
                 sys.stdout.flush()
-        print 'Done\n'
+        print 'Done ... RMSE = ' + str(np.sqrt(sse/sse_n)) + '\n'
 
     # Clean the weights
     P[P < 0] = 0
