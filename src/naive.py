@@ -51,6 +51,10 @@ def main():
             for j in range(data_stars_train.shape[1]):
                 if data_stars_train[i,j] == 0:
                     data_stars_train[i, j] = np.random.random_integers(1,5)
+
+    elif method == 'none':
+        data_stars_train = data_stars_train
+
     else:
         print 'Unknown method.'
 

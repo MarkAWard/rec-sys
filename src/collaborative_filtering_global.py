@@ -64,6 +64,9 @@ parser.add_option("-k", action="store",
 parser.add_option("-L", "--lambda4", action="store", 
                   dest="l4", type="string", default=None, 
                   help="lambda parameter for penalizing weights made with few users")
+parser.add_option("-t", "--training", action="store_false", 
+                  dest="train", default=True, 
+                  help="should training take place, or should we just grab the pretrained weights")
 
 def main():
     # Get command line options
@@ -72,6 +75,11 @@ def main():
     distance = options.distance
     neighbor_hood_size = int(options.k)
     l4 = int(options.l4)
+    train = options.train
+
+    # Parameters for the global model
+    g = float(options.g)
+    l5 = float(options.l5)
 
     # Get the ratings matrix
     R = np.array(pickle.load(open(pickle_directory + prefix + '_stars_train.p')).todense())
@@ -130,59 +138,67 @@ def main():
 
     # Get all the matrices we'll need
     R = pickle.load(open(pickle_directory + prefix + '_stars_train.p'))
-    P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(n) + '_l' + str(l4) + '.p'))
-    P = np.array(P.todense())
-    C = np.array(P, copy = True)
 
     R_row = R.nonzero()[0]
     R_col = R.nonzero()[1]
 
-    # Parameters for the global model
-    g = float(options.g)
-    l5 = float(options.l5)
+    if train:
+        P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(n) + '_l' + str(l4) + '.p'))
+        P = np.array(P.todense())
+        C = np.array(P, copy = True)
+    else:
+        try:
+            P = pickle.load(open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            C = pickle.load(open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            P = np.array(P.todense())
+            C = np.array(C.todense())
+        except:
+            print "Those weights are not found. Are you sure you don't want to train?"
+            sys.exit()
 
-    # Iterate and update the weights for explicit and implicit
-    for iteration in range(20):
-	sse = 0
-	sse_n = 0
-        print 'Iteration ' + str(iteration + 1)
-        for k, u in enumerate(R_row):
-            i = R_col[k]
-            
-            sigma_r = 0
-            sigma_n = 0
 
-            intersection = np.intersect1d(np.where(P[i,:] != 0)[0], user_buckets[u])
-            
-            for j in intersection:
-                sigma_r += (R[u, j] - (mu + b_i[j] + b_u[u])) * P[i, j]
-                sigma_n += C[i, j]
+    if train:
+        # Iterate and update the weights for explicit and implicit
+        for iteration in range(20):
+            sse = 0
+            sse_n = 0
 
-            if len(intersection) == 0:
-                pow1 = 0
-            else:
-                pow1 = np.power(len(intersection), -0.5)
+            print 'Iteration ' + str(iteration + 1)
 
-            r_hat = mu + b_u[u] + b_i[i] + pow1 * sigma_r + pow1 * sigma_n
-            
-            err = R[u, i] - r_hat
-            sse += np.power(err, 2)
-            sse_n += 1
+            for k, u in enumerate(R_row):
+                i = R_col[k]
+                
+                sigma_r = 0
+                sigma_n = 0
 
-            b_u[u] += g * (err - l5 * b_u[u])
-            b_i[i] += g * (err - l5 * b_i[i])
+                intersection = np.intersect1d(np.where(P[i,:] != 0)[0], user_buckets[u])
+                
+                for j in intersection:
+                    sigma_r += (R[u, j] - (mu + b_i[j] + b_u[u])) * P[i, j]
+                    sigma_n += C[i, j]
 
-            for j in intersection:
-                P[i, j] += g * (np.power(len(intersection), -0.5) * err * (R[u, j] - (mu + b_u[u] + b_i[j])) - l5 * P[i, j])
-                C[i, j] += g * (np.power(len(intersection), -0.5) * err - l5 * C[i, j])
-            if k % 10 == 0 or k == (len(R_row) - 1):
-                sys.stdout.write('\r' + str(round(float(k)/(len(R_row) - 1) * 100, 2)) + '%    ')
-                sys.stdout.flush()
-        print 'Done ... RMSE = ' + str(np.sqrt(sse/sse_n)) + '\n'
+                if len(intersection) == 0:
+                    pow1 = 0
+                else:
+                    pow1 = np.power(len(intersection), -0.5)
 
-    # Clean the weights
-    P[P < 0] = 0
-    C[C < 0] = 0
+                r_hat = mu + b_u[u] + b_i[i] + pow1 * sigma_r + pow1 * sigma_n
+                
+                err = R[u, i] - r_hat
+                sse += np.power(err, 2)
+                sse_n += 1
+
+                b_u[u] += g * (err - l5 * b_u[u])
+                b_i[i] += g * (err - l5 * b_i[i])
+
+                for j in intersection:
+                    P[i, j] += g * (np.power(len(intersection), -0.5) * err * (R[u, j] - (mu + b_u[u] + b_i[j])) - l5 * P[i, j])
+                    C[i, j] += g * (np.power(len(intersection), -0.5) * err - l5 * C[i, j])
+                if k % 10 == 0 or k == (len(R_row) - 1):
+                    sys.stdout.write('\r' + str(round(float(k)/(len(R_row) - 1) * 100, 2)) + '%    ')
+                    sys.stdout.flush()
+            print 'Done ... RMSE = ' + str(np.sqrt(sse/sse_n)) + '\n'
+
 
     # Only keep k-most similar
     for i in range(n):
@@ -191,19 +207,24 @@ def main():
         P[i, :] = P[i, :] * modifier
         C[i, :] = C[i, :] * modifier
 
-    # Store similarities
-    P = scipy.sparse.lil_matrix(P)
-    C = scipy.sparse.lil_matrix(C)
-    pickle.dump(P, open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
-    pickle.dump(C, open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
-    print 'Stored W matrix into ' + pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'
-    print 'Stored C matrix into ' + pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'
-    P = np.array(P.todense())
-    C = np.array(C.todense())
+    if train:
+        # Store similarities
+        P = scipy.sparse.lil_matrix(P)
+        C = scipy.sparse.lil_matrix(C)
+        pickle.dump(P, open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
+        pickle.dump(C, open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
+        print 'Stored W matrix into ' + pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'
+        print 'Stored C matrix into ' + pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_l' + str(l5) + '_g' + str(g) + '.p'
+        P = np.array(P.todense())
+        C = np.array(C.todense())
+
+    # Clean the weights
+    P[P < 0] = 0
+    C[C < 0] = 0
     print 'Done'
 
     # Get the validation matrix
-    V = pickle.load(open(pickle_directory + prefix + '_stars_validate.p'))
+    V = pickle.load(open(pickle_directory + prefix + '_stars_validate.p')).tocsr()
 
     # Which cells do we need to predict?
     required_row = V.nonzero()[0]
@@ -218,6 +239,9 @@ def main():
     for k, u in enumerate(required_row):
         i = required_col[k]
         
+        sigma_r = 0
+        sigma_n = 0
+
         intersection = np.intersect1d(np.where(P[i,:] != 0)[0], user_buckets[u])
         
         for j in intersection:
@@ -242,7 +266,7 @@ def main():
 
     # Get the RMSE
     R = scipy.sparse.csr_matrix(R)
-    print '\nRMSE for global (prefix = ' + prefix + ', k = ' + str(neighbor_hood_size) + ', l = ' + str(l5) + ', g = ' + str(g) + '): \t' + str(tools.rmse(R, V))
+    print '\nRMSE for global): \t' + str(tools.rmse(R, V))
 
 if __name__ == '__main__':
     main()
