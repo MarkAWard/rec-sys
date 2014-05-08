@@ -88,6 +88,55 @@ def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lamb
 
     return U, V
 
+def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix.p", v_pick="nnVmatrix.p"):
+
+    W = np.array(R, copy=True)
+    W[ W > 0 ] = 1
+
+    if initial:
+        U = initial[0]
+        V = initial[1]
+    else:
+        U = np.matrix(np.random.rand(R.shape[0],K)) 
+        V = np.matrix(np.random.rand(R.shape[1],K)) 
+
+    iters = 0
+    converged = False
+    while iters < steps and not converged:
+        temp = np.multiply(W, U * V.T)
+
+        # update U
+        num = np.multiply(W, R) * V
+        denom = temp * V
+        U = np.multiply(U, np.divide(num, denom) )
+
+        # update V
+        num = np.multiply(W, R).T * U
+        denom = temp.T * U
+        V = np.multiply(V, np.divide(num, denom) )
+
+        if iters % 2 == 0:
+            res = np.multiply(W, R - U*V.T)
+            err = np.ravel(res)
+            sse = np.dot(err, err)
+            print "%d\t%f" %(iters, sse)
+        
+        if iters % 200 == 0 and pickle:
+            cPickle.dump(U, open(u_pick, "wb"))
+            cPickle.dump(V, open(v_pick, "wb"))
+
+        if sse < tol:
+            converged = True
+        iters += 1
+
+    cPickle.dump(U, open(u_pick, "wb"))
+    cPickle.dump(V, open(v_pick, "wb"))
+    
+    return U, V
+
+
+
+
 
 def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
 
@@ -119,7 +168,7 @@ def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
     return U, V
 
 
-def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=True, u_pick="Umatrix.p", v_pick="Vmatrix.p"):
+def wSVD_EM(R, K, L=50, C=0.1, steps=1000, subiter=5, initial=None, tol=0.01, pickle=True, u_pick="Umatrix.p", v_pick="Vmatrix.p"):
     """
     R = Ratings matrix
     K = int, number of components to learn
@@ -144,7 +193,7 @@ def wSVD_EM(R, K, L=50, steps=100, subiter=5, initial=None, tol=0.01, pickle=Tru
         R_hat = U * V.T
     else:
         shape = R.shape
-        R_hat = np.zeros(shape)
+        R_hat = np.ones(shape) * C
 
     W = np.array(R, copy=True)
     W[ W > 0 ] = 1
