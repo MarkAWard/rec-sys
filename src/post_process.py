@@ -42,16 +42,33 @@ def buckets(R, one=5555, two=10788, three=22429, four=45622, five=30142):
         
     return tmp
 
-def calibrate_plot(R, cv):
-    x = []
-    y = []
+def calibrate_plot(R, cv, bins=500):
+    x1 = []
+    x2 = []
+    y1 = []
+    y2 = []
+    mn = R.min()
+    mx = R.max()
 
     for indx, val in enumerate(cv.data):
         i = cv.nonzero()[0][indx]
         j = cv.nonzero()[1][indx]
+        y1.append(val)
+        pred = R[i,j]
+        x1.append(pred)
+        
+        for k in np.linspace(mn, mx, num=bins):
+            if pred <= k:
+                x2.append(k)
+                break
 
-        y.append(val)
-        x.append(R[i,j])
+    y1 = np.array(y1)
+    y2 = np.copy(y1)
+    for k in np.linspace(mn, mx, num=bins):
+        mask = np.array(x2)==k
+        y2[mask] = np.average(y1[mask])
 
-    plt.scatter(x,y)
+    plt.scatter(x1,y1)
+    plt.show()
+    plt.scatter(x2,y2)
     plt.show()
