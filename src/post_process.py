@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def truncate(R):
     R2 = np.copy(R)
@@ -13,15 +14,18 @@ def linear(R, low=1.0, high=5.0):
     b = high - m * mx
     return (m*R + b)
 
+#def intervals(R):
+# round to integers or .5 intervals or .25 intervals...
+
 def buckets(R, one=5555, two=10788, three=22429, four=45622, five=30142):
     d = {0:one, 1:two, 2:three, 3:four, 4:five}
     indx = [0]
     total = float(one + two + three + four + five)
     
     try:
-        R = R.todense()
         vals = R.ravel()
     except:
+        R = R.todense()
         vals = R.ravel()
     vals = np.sort(vals)
     num = max(vals.shape)
@@ -37,3 +41,17 @@ def buckets(R, one=5555, two=10788, three=22429, four=45622, five=30142):
         tmp[ np.logical_and( R >= vals[indx[i]], R <= vals[indx[i+1]] ) ] = i +1
         
     return tmp
+
+def calibrate_plot(R, cv):
+    x = []
+    y = []
+
+    for indx, val in enumerate(cv.data):
+        i = cv.nonzero()[0][indx]
+        j = cv.nonzero()[1][indx]
+
+        y.append(val)
+        x.append(R[i,j])
+
+    plt.scatter(x,y)
+    plt.show()
