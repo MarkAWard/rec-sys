@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import inv
-from scipy import sparse, optimize
+from scipy import sparse, optimize, delete
 from sklearn.decomposition import TruncatedSVD
 import cPickle
 
@@ -90,6 +90,17 @@ def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lamb
 
 def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix.p", v_pick="nnVmatrix.p"):
 
+    try:
+        zeros = np.sum(R, axis=0)
+        zeros = zeros.reshape(zeros.shape[1], 1)
+        cols = []
+        for i, col in enumerate(zeros):
+            if col == 0:
+                cols.append(i)
+        R = delete(R, cols, 1)
+    except:
+        pass
+
     W = np.array(R, copy=True)
     W[ W > 0 ] = 1
 
@@ -97,9 +108,10 @@ def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix
         U = initial[0]
         V = initial[1]
     else:
-        U = np.matrix(np.random.rand(R.shape[0],K)) 
-        V = np.matrix(np.random.rand(R.shape[1],K)) 
-
+        U, V = initialize_nnmf(R, K)
+#        U = np.matrix(np.random.rand(R.shape[0],K)) 
+#        V = np.matrix(np.random.rand(R.shape[1],K)) 
+    print U.shape, V.shape
     iters = 0
     converged = False
     while iters < steps and not converged:
@@ -134,8 +146,60 @@ def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix
     
     return U, V
 
+def norm(x):
+    return np.sqrt(np.dot(x,x))
 
 
+def initialize_nnmf(R, K, eps=1e-5):
+    """
+    Altered code from sklearn nmf initialization
+    """   
+    tsvd = TruncatedSVD(n_components = K)
+    transformer = tsvd.fit( R )
+    V = transformer.components_
+    U = tsvd.fit_transform( R )
+
+    W, H = np.zeros(U.shape), np.zeros(V.shape)
+
+    W[:, 0] = np.abs(U[:, 0])
+    H[0, :] = np.abs(V[0, :])
+
+
+    for j in range(1, K):
+        x, y = U[:, j], V[j, :]
+
+        # extract positive and negative parts of column vectors
+        x_p, y_p = np.maximum(x, 0), np.maximum(y, 0)
+        x_n, y_n = np.abs(np.minimum(x, 0)), np.abs(np.minimum(y, 0))
+
+        # and their norms
+        x_p_nrm, y_p_nrm = norm(x_p), norm(y_p)
+        x_n_nrm, y_n_nrm = norm(x_n), norm(y_n)
+
+        m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
+
+        # choose update
+        if m_p > m_n:
+            u = x_p / x_p_nrm
+            v = y_p / y_p_nrm
+            sigma = m_p
+        else:
+            u = x_n / x_n_nrm
+            v = y_n / y_n_nrm
+            sigma = m_n
+
+        lbd = np.sqrt( sigma)
+        W[:, j] = lbd * u
+        H[j, :] = lbd * v
+
+    W[W < eps] = 0
+    H[H < eps] = 0
+
+    avg = R.mean()
+    W[W == 0] = avg
+    H[H == 0] = avg
+
+    return np.matrix(W), np.matrix(H.T)
 
 
 def SGD(Ratings, K, initial=None, steps=50, alpha=0.001, lambd=0.01, tol=0.001):
