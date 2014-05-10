@@ -58,6 +58,7 @@ def main():
     else:
         print 'Unknown method.'
 
+
     data_stars_train = scipy.sparse.csr_matrix(data_stars_train)
 
     print "RMSE for '" + method + "': " + str(tools.rmse(data_stars_train, data_stars_validate))
