@@ -212,23 +212,22 @@ def main():
     print "\nTraining ..."
     if train:
         if cont:
-            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l4) + '.p'))
-            W = pickle.load(open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'))
-            C = pickle.load(open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_l' + str(l4) + '.p'))
+            W = pickle.load(open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            C = pickle.load(open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'))
             P = np.array(P.todense())
             C = np.array(C.todense())
             W = np.array(W.todense())
         else:
-            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l4) + '.p'))
+            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_l' + str(l4) + '.p'))
             P = np.array(P.todense())
             C = np.array(P, copy = True)
             W = np.array(P, copy = True)
     else:
         try:
-            print pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l4) + '.p'
-            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l4) + '.p'))
-            W = pickle.load(open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'))
-            C = pickle.load(open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            P = pickle.load(open(pickle_directory + prefix + '_P_' + distance + '_k' + str(neighbor_hood_size) + '_l' + str(l4) + '.p'))
+            W = pickle.load(open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'))
+            C = pickle.load(open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'))
             P = np.array(P.todense())
             C = np.array(C.todense())
             W = np.array(W.todense())
@@ -302,10 +301,10 @@ def main():
         # Store similarities
         W = scipy.sparse.lil_matrix(W)
         C = scipy.sparse.lil_matrix(C)
-        pickle.dump(W, open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
-        pickle.dump(C, open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
-        print 'Stored W matrix into ' + pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'
-        print 'Stored C matrix into ' + pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_l' + str(l5) + '_g' + str(g) + '.p'
+        pickle.dump(W, open(pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
+        pickle.dump(C, open(pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p', "wb"))
+        print 'Stored W matrix into ' + pickle_directory + prefix + '_W_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'
+        print 'Stored C matrix into ' + pickle_directory + prefix + '_C_k' + str(neighbor_hood_size) + '_' + faking + '_i' + str(n_iterations) + '_l' + str(l5) + '_g' + str(g) + '.p'
         W = np.array(W.todense())
         C = np.array(C.todense())
 
