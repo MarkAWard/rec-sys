@@ -242,7 +242,7 @@ def main():
             sse = 0
             sse_n = 0
 
-            print 'Iteration ' + str(iteration + 1)
+            print 'Iteration ' + str(iteration + 1) + '/' + str(n_iterations)
 
             for k, u in enumerate(R_row):
                 i = R_col[k]
