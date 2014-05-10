@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import inv
-from scipy import sparse, optimize
+from scipy import sparse, optimize, delete
 from sklearn.decomposition import TruncatedSVD
 import cPickle
 
@@ -89,6 +89,14 @@ def weighted_low_rank_factorization(R, K, W=None, steps=1000, method='als', lamb
     return U, V
 
 def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix.p", v_pick="nnVmatrix.p"):
+
+    zeros = np.sum(R, axis=0)
+    zeros = zeros.reshape(zeros.shape[1], 1)
+    cols = []
+    for i, col in enumerate(zeros):
+        if col == 0:
+            cols.append(i)
+    R = delete(R, cols, 1)
 
     W = np.array(R, copy=True)
     W[ W > 0 ] = 1
