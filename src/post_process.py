@@ -42,6 +42,53 @@ def buckets(R, one=5555, two=10788, three=22429, four=45622, five=30142):
         
     return tmp
 
+def calibrate(R, cv, knn=15, bins=500):
+    
+    points = create_calibration_points(R, cv, bins=bins)
+    
+    for i in range(0, R.shape[0]):
+        for j in range(0, R.shape[1]):
+            indx = find_point(R[i,j], points)
+            R[i,j] = 
+
+
+def create_calibration_points(R, cv, bins=500):
+    x1 = []
+    x2 = []
+    y1 = []
+    y2 = []
+    mn = R.min()
+    mx = R.max()
+
+    for indx, val in enumerate(cv.data):
+        i = cv.nonzero()[0][indx]
+        j = cv.nonzero()[1][indx]
+        y1.append(val)
+        pred = R[i,j]
+        x1.append(pred)
+        
+        for k in np.linspace(mn-.01, mx+.01, num=bins):
+            if pred <= k:
+                x2.append(k)
+                break
+
+    y1 = np.array(y1)
+    y2 = np.copy(y1)
+    for k in np.linspace(mn-.01, mx+.01, num=bins):
+        mask = np.array(x2)==k
+        y2[mask] = np.average(y1[mask])
+
+    z = [(i, j) for i, j in zip(x2, y2) if j > 0]
+    
+    return np.unique(z)
+    
+def find_point(pred, points):
+    indx = 0
+    while indx < len(points) and points[indx,0] < pred:
+        indx += 1
+    return indx
+    
+
 def calibrate_plot(R, cv, bins=500):
     x1 = []
     x2 = []
@@ -57,14 +104,14 @@ def calibrate_plot(R, cv, bins=500):
         pred = R[i,j]
         x1.append(pred)
         
-        for k in np.linspace(mn, mx, num=bins):
+        for k in np.linspace(mn-.01, mx+.01, num=bins):
             if pred <= k:
                 x2.append(k)
                 break
 
     y1 = np.array(y1)
     y2 = np.copy(y1)
-    for k in np.linspace(mn, mx, num=bins):
+    for k in np.linspace(mn-.01, mx+.01, num=bins):
         mask = np.array(x2)==k
         y2[mask] = np.average(y1[mask])
 
