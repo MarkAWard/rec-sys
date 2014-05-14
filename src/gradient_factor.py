@@ -105,13 +105,11 @@ def NNMF(R, K, steps=100, initial=None, tol=0.01, pickle=True, u_pick="nnUmatrix
     W[ W > 0 ] = 1
 
     if initial:
-        U = initial[0]
-        V = initial[1]
+        U = np.matrix(np.random.rand(R.shape[0],K) * .1) 
+        V = np.matrix(np.random.rand(R.shape[1],K) * .1) 
     else:
         U, V = initialize_nnmf(R, K)
-#        U = np.matrix(np.random.rand(R.shape[0],K)) 
-#        V = np.matrix(np.random.rand(R.shape[1],K)) 
-    print U.shape, V.shape
+
     iters = 0
     converged = False
     while iters < steps and not converged:
