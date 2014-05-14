@@ -71,4 +71,7 @@ def calibrate_plot(R, cv, bins=500):
     plt.scatter(x1,y1)
     plt.show()
     plt.scatter(x2,y2)
+    plt.xlabel("Predicted Rating")
+    plt.ylabel("Average True Rating")
+    plt.title("Calibration Plot")
     plt.show()
