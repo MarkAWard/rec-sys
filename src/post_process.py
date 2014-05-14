@@ -42,14 +42,32 @@ def buckets(R, one=5555, two=10788, three=22429, four=45622, five=30142):
         
     return tmp
 
-def calibrate(R, cv, knn=15, bins=500):
+def calibrate(R, points, knn=3):
     
-    points = create_calibration_points(R, cv, bins=bins)
-    
+#    if knn != 3 or knn != 1:
+#        print "not implemented for knn=",knn 
+#        return -1
+
+    tmp = np.copy(R)
     for i in range(0, R.shape[0]):
         for j in range(0, R.shape[1]):
+            l = []
             indx = find_point(R[i,j], points)
-            R[i,j] = 
+            if knn == 1:
+                l.append(points[indx,1])
+            else:
+                try:
+                    l.append(points[indx-1,1])
+                except:
+                    l.append(points[indx,1])
+                try:
+                    l.append(points[indx+1,1])
+                except:
+                    l.append(points[indx,1])
+                l.append(points[indx,1])
+            tmp[i,j] = np.average(l)
+
+    return tmp
 
 
 def create_calibration_points(R, cv, bins=500):
@@ -86,7 +104,7 @@ def find_point(pred, points):
     indx = 0
     while indx < len(points) and points[indx,0] < pred:
         indx += 1
-    return indx
+    return indx-1
     
 
 def calibrate_plot(R, cv, bins=500):
@@ -118,7 +136,9 @@ def calibrate_plot(R, cv, bins=500):
     plt.scatter(x1,y1)
     plt.show()
     plt.scatter(x2,y2)
+    plt.grid()
     plt.xlabel("Predicted Rating")
     plt.ylabel("Average True Rating")
     plt.title("Calibration Plot")
+    plt.savefig("cal_plot.png", dpi=500)
     plt.show()
